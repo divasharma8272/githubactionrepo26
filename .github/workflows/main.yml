@@ -6,24 +6,39 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted  # This tells GitHub to use your self-runner
-    
+    runs-on: self-hosted   # Use your self-hosted runner
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
-      - name: Install dependencies (if any)
-        run: echo "Installing dependencies..."
-      
+
       - name: Deploy to server
         run: |
-          # Replace with your deployment commands
-          echo "Deploying to self-hosted server..."
-          # Example commands (customize for your server):
-          sudo apt install apache2 -y
-          # sudo mkdir /var/www/html/
+          echo "🚀 Deploying to self-hosted server..."
+
+          # Update package list (IMPORTANT to avoid 404 errors)
+          sudo apt-get update -y
+
+          # Install apache only if not already installed
+          if ! command -v apache2 >/dev/null 2>&1; then
+            sudo apt-get install apache2 -y
+          fi
+
+          # Start & enable apache
           sudo systemctl start apache2
-          sudo systemctl enable apache2 
+          sudo systemctl enable apache2
+
+          # Clear old deployment
+          sudo rm -rf /var/www/html/*
+
+          # Copy new build
           sudo cp -r . /var/www/html/
+
+          # Set correct permissions
           sudo chown -R www-data:www-data /var/www/html/
-          sudo systemctl restart apache2  # or nginx if you're using that
+          sudo chmod -R 755 /var/www/html/
+
+          # Restart apache
+          sudo systemctl restart apache2
+
+          echo "✅ Deployment completed successfully!"
